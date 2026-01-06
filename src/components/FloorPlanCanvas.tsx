@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { Upload, Plus, Move, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Upload, Plus, Move, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Position, getDepartmentInfo } from '@/types/position';
+import { Position } from '@/types/position';
 import { PositionBalloon } from './PositionBalloon';
 import { toast } from 'sonner';
 
@@ -12,6 +12,7 @@ interface FloorPlanCanvasProps {
   onAddPosition: (x: number, y: number) => void;
   onMovePosition: (id: string, x: number, y: number) => void;
   onDeletePosition: (id: string) => void;
+  floorPlanUrl?: string | null;
 }
 
 type Tool = 'select' | 'add';
@@ -23,13 +24,16 @@ export function FloorPlanCanvas({
   onAddPosition,
   onMovePosition,
   onDeletePosition,
+  floorPlanUrl,
 }: FloorPlanCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [floorPlanImage, setFloorPlanImage] = useState<string | null>(null);
+  const [localFloorPlan, setLocalFloorPlan] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<Tool>('select');
   const [scale, setScale] = useState(1);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  const floorPlanImage = floorPlanUrl || localFloorPlan;
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -44,7 +48,7 @@ export function FloorPlanCanvas({
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setFloorPlanImage(e.target?.result as string);
+        setLocalFloorPlan(e.target?.result as string);
         toast.success('Nacrt uspješno učitan!');
       };
       reader.readAsDataURL(file);

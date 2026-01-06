@@ -1,26 +1,40 @@
-import { Building2, BarChart3 } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { StoreSelector } from './StoreSelector';
+import { Store } from '@/hooks/useStores';
 
 interface HeaderProps {
-  storeName: string;
+  stores: Store[];
+  currentStore: Store | null;
+  onSelectStore: (store: Store) => void;
+  onAddStore: (name: string) => void;
+  onDeleteStore: (id: string) => void;
   onReportsClick: () => void;
 }
 
-export function Header({ storeName, onReportsClick }: HeaderProps) {
+export function Header({
+  stores,
+  currentStore,
+  onSelectStore,
+  onAddStore,
+  onDeleteStore,
+  onReportsClick,
+}: HeaderProps) {
   return (
     <header className="gradient-header border-b border-sidebar-border px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary">
-            <Building2 className="w-5 h-5 text-primary-foreground" />
-          </div>
           <div>
             <h1 className="text-lg font-semibold text-sidebar-foreground">
               Prodajne Pozicije
             </h1>
-            <p className="text-sm text-sidebar-foreground/70">
-              {storeName}
-            </p>
+            <StoreSelector
+              stores={stores}
+              currentStore={currentStore}
+              onSelectStore={onSelectStore}
+              onAddStore={onAddStore}
+              onDeleteStore={onDeleteStore}
+            />
           </div>
         </div>
         
