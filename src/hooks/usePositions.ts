@@ -1,122 +1,211 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Position, Department } from '@/types/position';
+import { toast } from 'sonner';
 
-const generateId = () => Math.random().toString(36).substring(2, 15);
+export interface PositionFilters {
+  department: Department | 'all';
+  status: 'all' | 'occupied' | 'free' | 'expiring';
+  search: string;
+}
 
-const INITIAL_POSITIONS: Position[] = [
-  {
-    id: generateId(),
-    positionNumber: 'P001',
-    trader: 'Mlinar d.o.o.',
-    leaseEndDate: '2025-06-30',
-    department: 'svjeza',
-    isFree: false,
-    x: 150,
-    y: 200,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: generateId(),
-    positionNumber: 'P002',
-    trader: 'Agroprodukt',
-    leaseEndDate: '2025-03-15',
-    department: 'voce-povrce',
-    isFree: false,
-    x: 300,
-    y: 250,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: generateId(),
-    positionNumber: 'P003',
-    trader: '',
-    leaseEndDate: null,
-    department: 'slobodna',
-    isFree: true,
-    x: 450,
-    y: 180,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: generateId(),
-    positionNumber: 'P004',
-    trader: 'Gastro Plus',
-    leaseEndDate: '2025-12-31',
-    department: 'gastro',
-    isFree: false,
-    x: 200,
-    y: 400,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: generateId(),
-    positionNumber: 'P005',
-    trader: 'Elektronika BH',
-    leaseEndDate: '2025-09-01',
-    department: 'neprehrana1',
-    isFree: false,
-    x: 550,
-    y: 350,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+const mapDbToPosition = (row: any): Position => ({
+  id: row.id,
+  positionNumber: row.position_number,
+  trader: row.trader,
+  leaseEndDate: row.lease_end_date,
+  department: row.department as Department,
+  isFree: row.is_free,
+  x: row.x,
+  y: row.y,
+  notes: row.notes,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
 
-export function usePositions() {
-  const [positions, setPositions] = useState<Position[]>(INITIAL_POSITIONS);
+export function usePositions(storeId: string | null) {
+  const [positions, setPositions] = useState<Position[]>([]);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState<PositionFilters>({
+    department: 'all',
+    status: 'all',
+    search: '',
+  });
 
-  const addPosition = useCallback((x: number, y: number) => {
-    const newPosition: Position = {
-      id: generateId(),
-      positionNumber: `P${String(positions.length + 1).padStart(3, '0')}`,
-      trader: '',
-      leaseEndDate: null,
-      department: 'slobodna',
-      isFree: true,
-      x,
-      y,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setPositions(prev => [...prev, newPosition]);
-    setSelectedPosition(newPosition);
-    return newPosition;
-  }, [positions.length]);
+  const fetchPositions = useCallback(async () => {
+    if (!storeId) {
+      setPositions([]);
+      return;
+    }
 
-  const updatePosition = useCallback((id: string, updates: Partial<Position>) => {
-    setPositions(prev => prev.map(p => {
-      if (p.id === id) {
-        const updated = { ...p, ...updates, updatedAt: new Date().toISOString() };
-        if (updated.trader && updated.trader.trim() !== '') {
-          updated.isFree = false;
-          if (updated.department === 'slobodna') {
-            updated.department = 'svjeza';
-          }
-        } else if (!updated.trader || updated.trader.trim() === '') {
-          updated.isFree = true;
-          updated.department = 'slobodna';
-        }
-        return updated;
-      }
-      return p;
-    }));
-  }, []);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('positions')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('position_number');
 
-  const deletePosition = useCallback((id: string) => {
-    setPositions(prev => prev.filter(p => p.id !== id));
+      if (error) throw error;
+      setPositions((data || []).map(mapDbToPosition));
+    } catch (error) {
+      console.error('Error fetching positions:', error);
+      toast.error('Greška pri učitavanju pozicija');
+    } finally {
+      setLoading(false);
+    }
+  }, [storeId]);
+
+  useEffect(() => {
+    fetchPositions();
     setSelectedPosition(null);
-  }, []);
+  }, [fetchPositions]);
 
-  const movePosition = useCallback((id: string, x: number, y: number) => {
+  const filteredPositions = useMemo(() => {
+    return positions.filter(p => {
+      // Department filter
+      if (filters.department !== 'all' && p.department !== filters.department) {
+        return false;
+      }
+      
+      // Status filter
+      if (filters.status === 'occupied' && p.isFree) return false;
+      if (filters.status === 'free' && !p.isFree) return false;
+      if (filters.status === 'expiring') {
+        if (!p.leaseEndDate) return false;
+        const endDate = new Date(p.leaseEndDate);
+        const now = new Date();
+        const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays > 30 || diffDays <= 0) return false;
+      }
+      
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesNumber = p.positionNumber.toLowerCase().includes(searchLower);
+        const matchesTrader = p.trader.toLowerCase().includes(searchLower);
+        if (!matchesNumber && !matchesTrader) return false;
+      }
+      
+      return true;
+    });
+  }, [positions, filters]);
+
+  const addPosition = useCallback(async (x: number, y: number) => {
+    if (!storeId) return null;
+
+    const positionNumber = `P${String(positions.length + 1).padStart(3, '0')}`;
+    
+    try {
+      const { data, error } = await supabase
+        .from('positions')
+        .insert({
+          store_id: storeId,
+          position_number: positionNumber,
+          trader: '',
+          department: 'slobodna',
+          is_free: true,
+          x,
+          y,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      const newPosition = mapDbToPosition(data);
+      setPositions(prev => [...prev, newPosition]);
+      setSelectedPosition(newPosition);
+      return newPosition;
+    } catch (error) {
+      console.error('Error adding position:', error);
+      toast.error('Greška pri dodavanju pozicije');
+      return null;
+    }
+  }, [storeId, positions.length]);
+
+  const updatePosition = useCallback(async (id: string, updates: Partial<Position>) => {
+    try {
+      const dbUpdates: any = {};
+      if (updates.positionNumber !== undefined) dbUpdates.position_number = updates.positionNumber;
+      if (updates.trader !== undefined) {
+        dbUpdates.trader = updates.trader;
+        // Auto-update isFree based on trader
+        const hasTrader = updates.trader && updates.trader.trim() !== '';
+        dbUpdates.is_free = !hasTrader;
+        if (!hasTrader) {
+          dbUpdates.department = 'slobodna';
+        } else if (updates.department === 'slobodna' || (!updates.department && positions.find(p => p.id === id)?.department === 'slobodna')) {
+          dbUpdates.department = 'svjeza';
+        }
+      }
+      if (updates.leaseEndDate !== undefined) dbUpdates.lease_end_date = updates.leaseEndDate;
+      if (updates.department !== undefined) dbUpdates.department = updates.department;
+      if (updates.isFree !== undefined) dbUpdates.is_free = updates.isFree;
+      if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+      if (updates.x !== undefined) dbUpdates.x = updates.x;
+      if (updates.y !== undefined) dbUpdates.y = updates.y;
+
+      const { data, error } = await supabase
+        .from('positions')
+        .update(dbUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      const updatedPosition = mapDbToPosition(data);
+      setPositions(prev => prev.map(p => p.id === id ? updatedPosition : p));
+      if (selectedPosition?.id === id) {
+        setSelectedPosition(updatedPosition);
+      }
+    } catch (error) {
+      console.error('Error updating position:', error);
+      toast.error('Greška pri ažuriranju pozicije');
+    }
+  }, [positions, selectedPosition]);
+
+  const deletePosition = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('positions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setPositions(prev => prev.filter(p => p.id !== id));
+      if (selectedPosition?.id === id) {
+        setSelectedPosition(null);
+      }
+      toast.success('Pozicija obrisana!');
+    } catch (error) {
+      console.error('Error deleting position:', error);
+      toast.error('Greška pri brisanju pozicije');
+    }
+  }, [selectedPosition]);
+
+  const movePosition = useCallback(async (id: string, x: number, y: number) => {
+    // Optimistic update
     setPositions(prev => prev.map(p => 
-      p.id === id ? { ...p, x, y, updatedAt: new Date().toISOString() } : p
+      p.id === id ? { ...p, x, y } : p
     ));
-  }, []);
+
+    try {
+      const { error } = await supabase
+        .from('positions')
+        .update({ x, y })
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error moving position:', error);
+      // Revert on error
+      fetchPositions();
+    }
+  }, [fetchPositions]);
 
   const getStats = useCallback(() => {
     const total = positions.length;
@@ -140,12 +229,17 @@ export function usePositions() {
 
   return {
     positions,
+    filteredPositions,
     selectedPosition,
     setSelectedPosition,
+    loading,
+    filters,
+    setFilters,
     addPosition,
     updatePosition,
     deletePosition,
     movePosition,
     getStats,
+    refetch: fetchPositions,
   };
 }
