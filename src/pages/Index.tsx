@@ -6,6 +6,7 @@ import { PositionDetails } from '@/components/PositionDetails';
 import { ReportsDialog } from '@/components/ReportsDialog';
 import { DepartmentLegend } from '@/components/DepartmentLegend';
 import { PositionFilters } from '@/components/PositionFilters';
+import { ExportDialog } from '@/components/ExportDialog';
 import { useStores } from '@/hooks/useStores';
 import { usePositions } from '@/hooks/usePositions';
 import { Toaster } from '@/components/ui/sonner';
@@ -13,6 +14,7 @@ import { Loader2 } from 'lucide-react';
 
 const Index = () => {
   const [showReports, setShowReports] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   
   const {
     stores,
@@ -20,6 +22,7 @@ const Index = () => {
     setCurrentStore,
     loading: storesLoading,
     addStore,
+    updateStore,
     deleteStore,
   } = useStores();
 
@@ -52,6 +55,12 @@ const Index = () => {
     );
   }
 
+  const handleUpdateFloorPlan = async (url: string | null) => {
+    if (currentStore) {
+      await updateStore(currentStore.id, { floor_plan_url: url });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header 
@@ -60,7 +69,9 @@ const Index = () => {
         onSelectStore={setCurrentStore}
         onAddStore={addStore}
         onDeleteStore={deleteStore}
+        onUpdateFloorPlan={handleUpdateFloorPlan}
         onReportsClick={() => setShowReports(true)}
+        onExportClick={() => setShowExport(true)}
       />
       
       <StatsCards 
@@ -104,6 +115,13 @@ const Index = () => {
         open={showReports}
         onOpenChange={setShowReports}
         positions={positions}
+      />
+
+      <ExportDialog
+        open={showExport}
+        onOpenChange={setShowExport}
+        positions={positions}
+        storeName={currentStore?.name || 'Prodavnica'}
       />
       
       <Toaster position="bottom-right" />
