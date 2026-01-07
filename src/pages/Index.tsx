@@ -23,6 +23,7 @@ const Index = () => {
     loading: storesLoading,
     addStore,
     updateStore,
+    renameStore,
     deleteStore,
   } = useStores();
 
@@ -69,6 +70,7 @@ const Index = () => {
         onSelectStore={setCurrentStore}
         onAddStore={addStore}
         onDeleteStore={deleteStore}
+        onRenameStore={renameStore}
         onUpdateFloorPlan={handleUpdateFloorPlan}
         onReportsClick={() => setShowReports(true)}
         onExportClick={() => setShowExport(true)}

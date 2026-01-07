@@ -10,6 +10,7 @@ interface HeaderProps {
   onSelectStore: (store: Store) => void;
   onAddStore: (name: string) => void;
   onDeleteStore: (id: string) => void;
+  onRenameStore: (id: string, name: string) => void;
   onUpdateFloorPlan: (url: string | null) => void;
   onReportsClick: () => void;
   onExportClick: () => void;
@@ -21,6 +22,7 @@ export function Header({
   onSelectStore,
   onAddStore,
   onDeleteStore,
+  onRenameStore,
   onUpdateFloorPlan,
   onReportsClick,
   onExportClick,
@@ -39,6 +41,7 @@ export function Header({
               onSelectStore={onSelectStore}
               onAddStore={onAddStore}
               onDeleteStore={onDeleteStore}
+              onRenameStore={onRenameStore}
             />
           </div>
         </div>

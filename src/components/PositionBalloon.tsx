@@ -47,6 +47,14 @@ export function PositionBalloon({
     return diffDays <= 30 && diffDays > 0;
   })();
 
+  // Calculate balloon size based on scale
+  const baseSize = 40;
+  const baseFontSize = 14;
+  const balloonSize = Math.max(24, baseSize * scale);
+  const fontSize = Math.max(10, baseFontSize * scale);
+  const paddingX = Math.max(6, 12 * scale);
+  const deleteButtonSize = Math.max(16, 24 * scale);
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -62,27 +70,47 @@ export function PositionBalloon({
           {/* Balloon */}
           <div 
             className={`
-              relative flex items-center justify-center min-w-[40px] h-10 px-3 rounded-lg 
-              ${colorClass} text-white font-semibold text-sm shadow-balloon
+              relative flex items-center justify-center rounded-lg 
+              ${colorClass} text-white font-semibold shadow-balloon
               transition-all duration-200
-              ${isSelected ? 'ring-2 ring-offset-2 ring-ring scale-110' : 'hover:scale-105'}
+              ${isSelected ? 'ring-2 ring-offset-2 ring-ring' : 'hover:brightness-110'}
               ${isDragging ? 'opacity-90' : ''}
             `}
+            style={{
+              minWidth: `${balloonSize}px`,
+              height: `${balloonSize}px`,
+              paddingLeft: `${paddingX}px`,
+              paddingRight: `${paddingX}px`,
+              fontSize: `${fontSize}px`,
+            }}
           >
             {position.positionNumber}
             
             {/* Expiring indicator */}
             {isExpiringSoon && (
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-warning rounded-full animate-pulse" />
+              <span 
+                className="absolute bg-warning rounded-full animate-pulse"
+                style={{
+                  width: `${Math.max(8, 12 * scale)}px`,
+                  height: `${Math.max(8, 12 * scale)}px`,
+                  top: `${-Math.max(2, 4 * scale)}px`,
+                  right: `${-Math.max(2, 4 * scale)}px`,
+                }}
+              />
             )}
 
             {/* Pointer */}
             <div 
-              className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 
-                border-l-[6px] border-l-transparent 
-                border-r-[6px] border-r-transparent 
-                border-t-[8px] ${colorClass.replace('bg-', 'border-t-')}`}
-              style={{ borderTopColor: 'inherit' }}
+              className={`absolute left-1/2 -translate-x-1/2 w-0 h-0`}
+              style={{ 
+                borderTopColor: 'inherit',
+                borderLeftWidth: `${Math.max(4, 6 * scale)}px`,
+                borderRightWidth: `${Math.max(4, 6 * scale)}px`,
+                borderTopWidth: `${Math.max(6, 8 * scale)}px`,
+                borderLeftColor: 'transparent',
+                borderRightColor: 'transparent',
+                bottom: `${-Math.max(6, 8 * scale)}px`,
+              }}
             />
           </div>
 
@@ -91,13 +119,19 @@ export function PositionBalloon({
             <Button
               variant="destructive"
               size="icon"
-              className="absolute -top-2 -right-2 w-6 h-6 rounded-full animate-scale-in"
+              className="absolute rounded-full animate-scale-in"
+              style={{
+                width: `${deleteButtonSize}px`,
+                height: `${deleteButtonSize}px`,
+                top: `${-deleteButtonSize / 3}px`,
+                right: `${-deleteButtonSize / 3}px`,
+              }}
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete();
               }}
             >
-              <Trash2 className="w-3 h-3" />
+              <Trash2 style={{ width: `${Math.max(10, 12 * scale)}px`, height: `${Math.max(10, 12 * scale)}px` }} />
             </Button>
           )}
         </div>
