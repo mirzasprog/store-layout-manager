@@ -1,6 +1,7 @@
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StoreSelector } from './StoreSelector';
+import { FloorPlanUpload } from './FloorPlanUpload';
 import { Store } from '@/hooks/useStores';
 
 interface HeaderProps {
@@ -9,7 +10,9 @@ interface HeaderProps {
   onSelectStore: (store: Store) => void;
   onAddStore: (name: string) => void;
   onDeleteStore: (id: string) => void;
+  onUpdateFloorPlan: (url: string | null) => void;
   onReportsClick: () => void;
+  onExportClick: () => void;
 }
 
 export function Header({
@@ -18,7 +21,9 @@ export function Header({
   onSelectStore,
   onAddStore,
   onDeleteStore,
+  onUpdateFloorPlan,
   onReportsClick,
+  onExportClick,
 }: HeaderProps) {
   return (
     <header className="gradient-header border-b border-sidebar-border px-6 py-4">
@@ -38,15 +43,35 @@ export function Header({
           </div>
         </div>
         
-        <Button 
-          variant="secondary" 
-          size="sm" 
-          onClick={onReportsClick}
-          className="gap-2"
-        >
-          <BarChart3 className="w-4 h-4" />
-          Izvještaji
-        </Button>
+        <div className="flex items-center gap-3">
+          {currentStore && (
+            <FloorPlanUpload
+              storeId={currentStore.id}
+              currentUrl={currentStore.floor_plan_url}
+              onUploadComplete={onUpdateFloorPlan}
+            />
+          )}
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onExportClick}
+            className="gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Excel
+          </Button>
+          
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={onReportsClick}
+            className="gap-2"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Izvještaji
+          </Button>
+        </div>
       </div>
     </header>
   );
