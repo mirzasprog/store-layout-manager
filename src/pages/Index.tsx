@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Header } from '@/components/Header';
 import { StatsCards } from '@/components/StatsCards';
+import { LeaseValueDashboard } from '@/components/LeaseValueDashboard';
 import { FloorPlanCanvas } from '@/components/FloorPlanCanvas';
 import { PositionDetails } from '@/components/PositionDetails';
 import { ReportsDialog } from '@/components/ReportsDialog';
@@ -9,6 +10,7 @@ import { PositionFilters } from '@/components/PositionFilters';
 import { ExportDialog } from '@/components/ExportDialog';
 import { useStores } from '@/hooks/useStores';
 import { usePositions } from '@/hooks/usePositions';
+import { useLeaseTotals } from '@/hooks/useLeaseTotals';
 import { Toaster } from '@/components/ui/sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -39,10 +41,14 @@ const Index = () => {
     updatePosition,
     deletePosition,
     movePosition,
+    resizePosition,
+    duplicatePosition,
     getStats,
   } = usePositions(currentStore?.id || null);
 
   const stats = getStats();
+  const currentLeasedCount = positions.filter(position => !position.isFree).length;
+  const { storeTotals, labelTotals, totalValue, loading: leaseTotalsLoading } = useLeaseTotals(stores);
   const loading = storesLoading || positionsLoading;
 
   if (storesLoading) {
@@ -81,6 +87,17 @@ const Index = () => {
         occupied={stats.occupied}
         free={stats.free}
         expiringSoon={stats.expiringSoon}
+        leasedValue={stats.leasedValue}
+      />
+
+      <LeaseValueDashboard
+        currentStoreName={currentStore?.name || 'Prodavnica'}
+        currentStoreValue={stats.leasedValue}
+        currentStoreLeasedCount={currentLeasedCount}
+        totalValue={totalValue}
+        storeTotals={storeTotals}
+        labelTotals={labelTotals}
+        loading={leaseTotalsLoading}
       />
 
       <PositionFilters
@@ -98,7 +115,9 @@ const Index = () => {
             onSelectPosition={setSelectedPosition}
             onAddPosition={addPosition}
             onMovePosition={movePosition}
+            onResizePosition={resizePosition}
             onDeletePosition={deletePosition}
+            onDuplicatePosition={duplicatePosition}
             floorPlanUrl={currentStore?.floor_plan_url || null}
           />
           <DepartmentLegend />

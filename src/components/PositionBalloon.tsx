@@ -13,6 +13,7 @@ interface PositionBalloonProps {
   isDragging: boolean;
   scale: number;
   onMouseDown: (e: React.MouseEvent) => void;
+  onResizeMouseDown: (e: React.MouseEvent) => void;
   onDelete: () => void;
 }
 
@@ -35,6 +36,7 @@ export function PositionBalloon({
   isDragging,
   scale,
   onMouseDown,
+  onResizeMouseDown,
   onDelete,
 }: PositionBalloonProps) {
   const deptInfo = getDepartmentInfo(position.department);
@@ -47,12 +49,9 @@ export function PositionBalloon({
     return diffDays <= 30 && diffDays > 0;
   })();
 
-  // Calculate balloon size based on scale
-  const baseSize = 40;
-  const baseFontSize = 14;
-  const balloonSize = Math.max(24, baseSize * scale);
-  const fontSize = Math.max(10, baseFontSize * scale);
-  const paddingX = Math.max(6, 12 * scale);
+  const balloonWidth = Math.max(32, position.width * scale);
+  const balloonHeight = Math.max(32, position.height * scale);
+  const fontSize = Math.max(10, 12 * scale);
   const deleteButtonSize = Math.max(16, 24 * scale);
 
   return (
@@ -77,10 +76,8 @@ export function PositionBalloon({
               ${isDragging ? 'opacity-90' : ''}
             `}
             style={{
-              minWidth: `${balloonSize}px`,
-              height: `${balloonSize}px`,
-              paddingLeft: `${paddingX}px`,
-              paddingRight: `${paddingX}px`,
+              width: `${balloonWidth}px`,
+              height: `${balloonHeight}px`,
               fontSize: `${fontSize}px`,
             }}
           >
@@ -112,6 +109,18 @@ export function PositionBalloon({
                 bottom: `${-Math.max(6, 8 * scale)}px`,
               }}
             />
+
+            {isSelected && (
+              <button
+                type="button"
+                className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 w-3 h-3 bg-background border border-muted-foreground rounded-sm shadow cursor-se-resize"
+                style={{ width: `${Math.max(8, 10 * scale)}px`, height: `${Math.max(8, 10 * scale)}px` }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  onResizeMouseDown(e);
+                }}
+              />
+            )}
           </div>
 
           {/* Delete button - only show when selected */}
@@ -140,11 +149,17 @@ export function PositionBalloon({
         <div className="space-y-1">
           <p className="font-semibold">{position.positionNumber}</p>
           {position.trader && <p className="text-sm">Trgovac: {position.trader}</p>}
+          {position.positionLabel && <p className="text-sm">Naziv: {position.positionLabel}</p>}
+          {position.positionType && <p className="text-sm">Tip: {position.positionType}</p>}
+          {position.itemName && <p className="text-sm">Artikal: {position.itemName}</p>}
           <p className="text-sm">Odjel: {deptInfo.label}</p>
           {position.leaseEndDate && (
             <p className="text-sm">
               Zakup do: {new Date(position.leaseEndDate).toLocaleDateString('hr-HR')}
             </p>
+          )}
+          {!position.isFree && position.leaseValueKm !== null && (
+            <p className="text-sm">Vrijednost: {position.leaseValueKm.toFixed(2)} KM</p>
           )}
           {position.isFree && <p className="text-sm text-success">Slobodna pozicija</p>}
         </div>

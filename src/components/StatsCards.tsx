@@ -6,9 +6,13 @@ interface StatsCardsProps {
   occupied: number;
   free: number;
   expiringSoon: number;
+  leasedValue: number;
 }
 
-export function StatsCards({ total, occupied, free, expiringSoon }: StatsCardsProps) {
+const formatKm = (value: number) =>
+  new Intl.NumberFormat('bs-BA', { style: 'currency', currency: 'BAM' }).format(value);
+
+export function StatsCards({ total, occupied, free, expiringSoon, leasedValue }: StatsCardsProps) {
   const stats = [
     {
       label: 'Ukupno pozicija',
@@ -38,10 +42,17 @@ export function StatsCards({ total, occupied, free, expiringSoon }: StatsCardsPr
       color: 'text-warning',
       bgColor: 'bg-warning/10',
     },
+    {
+      label: 'Vrijednost zakupa',
+      value: formatKm(leasedValue),
+      icon: CheckCircle2,
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
+    },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 p-4">
       {stats.map((stat) => (
         <Card key={stat.label} className="shadow-card hover:shadow-card-hover transition-shadow animate-fade-in">
           <CardContent className="flex items-center gap-4 p-4">

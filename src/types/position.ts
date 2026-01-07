@@ -12,10 +12,16 @@ export interface Position {
   positionNumber: string;
   trader: string;
   leaseEndDate: string | null;
+  leaseValueKm: number | null;
+  positionLabel: string;
+  positionType: string;
+  itemName: string;
   department: Department;
   isFree: boolean;
   x: number;
   y: number;
+  width: number;
+  height: number;
   notes?: string;
   createdAt: string;
   updatedAt: string;

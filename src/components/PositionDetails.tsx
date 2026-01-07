@@ -26,6 +26,10 @@ export function PositionDetails({ position, onUpdate, onClose }: PositionDetails
     positionNumber: position.positionNumber,
     trader: position.trader,
     leaseEndDate: position.leaseEndDate || '',
+    leaseValueKm: position.leaseValueKm ?? 0,
+    positionLabel: position.positionLabel,
+    positionType: position.positionType,
+    itemName: position.itemName,
     department: position.department,
     notes: position.notes || '',
   });
@@ -35,6 +39,10 @@ export function PositionDetails({ position, onUpdate, onClose }: PositionDetails
       positionNumber: position.positionNumber,
       trader: position.trader,
       leaseEndDate: position.leaseEndDate || '',
+      leaseValueKm: position.leaseValueKm ?? 0,
+      positionLabel: position.positionLabel,
+      positionType: position.positionType,
+      itemName: position.itemName,
       department: position.department,
       notes: position.notes || '',
     });
@@ -45,6 +53,10 @@ export function PositionDetails({ position, onUpdate, onClose }: PositionDetails
       positionNumber: formData.positionNumber,
       trader: formData.trader,
       leaseEndDate: formData.leaseEndDate || null,
+      leaseValueKm: Number.isFinite(formData.leaseValueKm) ? formData.leaseValueKm : 0,
+      positionLabel: formData.positionLabel,
+      positionType: formData.positionType,
+      itemName: formData.itemName,
       department: formData.department as Department,
       notes: formData.notes,
     });
@@ -54,6 +66,16 @@ export function PositionDetails({ position, onUpdate, onClose }: PositionDetails
   const filteredDepartments = formData.trader.trim() 
     ? DEPARTMENTS.filter(d => d.value !== 'slobodna')
     : DEPARTMENTS;
+
+  const positionTypeOptions = [
+    { value: '', label: 'Nije postavljeno' },
+    { value: 'Bocna polica', label: 'Bocna polica' },
+    { value: 'Gondola', label: 'Gondola' },
+    { value: 'Frižider', label: 'Frižider' },
+    { value: 'Kasa', label: 'Kasa' },
+    { value: 'Promo zona', label: 'Promo zona' },
+    { value: 'Otok', label: 'Otok' },
+  ];
 
   return (
     <div className="w-80 border-l border-border bg-card h-full flex flex-col animate-fade-in">
@@ -92,6 +114,61 @@ export function PositionDetails({ position, onUpdate, onClose }: PositionDetails
             type="date"
             value={formData.leaseEndDate}
             onChange={(e) => setFormData(f => ({ ...f, leaseEndDate: e.target.value }))}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="leaseValueKm">Vrijednost zakupa (KM)</Label>
+          <Input
+            id="leaseValueKm"
+            type="number"
+            min="0"
+            step="0.01"
+            value={formData.leaseValueKm}
+            onChange={(e) => {
+              const value = e.target.value === '' ? 0 : Number(e.target.value);
+              setFormData(f => ({ ...f, leaseValueKm: value }));
+            }}
+            placeholder="0.00"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="positionLabel">Naziv pozicije</Label>
+          <Input
+            id="positionLabel"
+            value={formData.positionLabel}
+            onChange={(e) => setFormData(f => ({ ...f, positionLabel: e.target.value }))}
+            placeholder="npr. Gratis"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="positionType">Tip pozicije</Label>
+          <Select
+            value={formData.positionType}
+            onValueChange={(value) => setFormData(f => ({ ...f, positionType: value }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Odaberite tip" />
+            </SelectTrigger>
+            <SelectContent>
+              {positionTypeOptions.map((option) => (
+                <SelectItem key={option.label} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="itemName">Naziv artikla</Label>
+          <Input
+            id="itemName"
+            value={formData.itemName}
+            onChange={(e) => setFormData(f => ({ ...f, itemName: e.target.value }))}
+            placeholder="Artikal na poziciji"
           />
         </div>
 
