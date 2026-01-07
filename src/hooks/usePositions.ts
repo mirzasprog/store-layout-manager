@@ -62,6 +62,45 @@ export function usePositions(storeId: string | null) {
     setSelectedPosition(null);
   }, [fetchPositions]);
 
+  // Realtime subscription for positions
+  useEffect(() => {
+    if (!storeId) return;
+
+    const channel = supabase
+      .channel(`positions-realtime-${storeId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'positions', filter: `store_id=eq.${storeId}` },
+        (payload) => {
+          console.log('Position realtime update:', payload);
+          if (payload.eventType === 'INSERT') {
+            const newPos = mapDbToPosition(payload.new);
+            setPositions(prev => {
+              if (prev.find(p => p.id === newPos.id)) return prev;
+              return [...prev, newPos];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = mapDbToPosition(payload.new);
+            setPositions(prev => prev.map(p => p.id === updated.id ? updated : p));
+            if (selectedPosition?.id === updated.id) {
+              setSelectedPosition(updated);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = (payload.old as any).id;
+            setPositions(prev => prev.filter(p => p.id !== deletedId));
+            if (selectedPosition?.id === deletedId) {
+              setSelectedPosition(null);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [storeId, selectedPosition]);
+
   const filteredPositions = useMemo(() => {
     return positions.filter(p => {
       // Department filter

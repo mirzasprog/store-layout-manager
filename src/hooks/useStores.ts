@@ -79,6 +79,14 @@ export function useStores() {
     }
   }, [currentStore]);
 
+  const renameStore = useCallback(async (id: string, name: string) => {
+    const result = await updateStore(id, { name });
+    if (result) {
+      toast.success('Prodavnica preimenovana!');
+    }
+    return result;
+  }, [updateStore]);
+
   const deleteStore = useCallback(async (id: string) => {
     try {
       const { error } = await supabase
@@ -99,6 +107,42 @@ export function useStores() {
     }
   }, [currentStore, stores]);
 
+  // Realtime subscription for stores
+  useEffect(() => {
+    const channel = supabase
+      .channel('stores-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'stores' },
+        (payload) => {
+          console.log('Store realtime update:', payload);
+          if (payload.eventType === 'INSERT') {
+            setStores(prev => {
+              if (prev.find(s => s.id === (payload.new as Store).id)) return prev;
+              return [...prev, payload.new as Store].sort((a, b) => a.name.localeCompare(b.name));
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = payload.new as Store;
+            setStores(prev => prev.map(s => s.id === updated.id ? updated : s));
+            if (currentStore?.id === updated.id) {
+              setCurrentStore(updated);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const deleted = payload.old as Store;
+            setStores(prev => prev.filter(s => s.id !== deleted.id));
+            if (currentStore?.id === deleted.id) {
+              setCurrentStore(prev => stores.find(s => s.id !== deleted.id) || null);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentStore, stores]);
+
   useEffect(() => {
     fetchStores();
   }, [fetchStores]);
@@ -110,6 +154,7 @@ export function useStores() {
     loading,
     addStore,
     updateStore,
+    renameStore,
     deleteStore,
     refetch: fetchStores,
   };

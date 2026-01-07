@@ -27,6 +27,7 @@ interface StoreSelectorProps {
   onSelectStore: (store: Store) => void;
   onAddStore: (name: string) => void;
   onDeleteStore: (id: string) => void;
+  onRenameStore: (id: string, name: string) => void;
 }
 
 export function StoreSelector({
@@ -35,10 +36,13 @@ export function StoreSelector({
   onSelectStore,
   onAddStore,
   onDeleteStore,
+  onRenameStore,
 }: StoreSelectorProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newStoreName, setNewStoreName] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<Store | null>(null);
+  const [editingStore, setEditingStore] = useState<Store | null>(null);
+  const [editName, setEditName] = useState('');
 
   const handleAddStore = () => {
     if (newStoreName.trim()) {
@@ -46,6 +50,20 @@ export function StoreSelector({
       setNewStoreName('');
       setIsAdding(false);
     }
+  };
+
+  const handleRename = () => {
+    if (editingStore && editName.trim()) {
+      onRenameStore(editingStore.id, editName.trim());
+      setEditingStore(null);
+      setEditName('');
+    }
+  };
+
+  const startEdit = (store: Store, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingStore(store);
+    setEditName(store.name);
   };
 
   return (
@@ -58,7 +76,7 @@ export function StoreSelector({
             <ChevronDown className="w-4 h-4 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-64">
+        <DropdownMenuContent align="start" className="w-72">
           {stores.map((store) => (
             <DropdownMenuItem
               key={store.id}
@@ -68,17 +86,27 @@ export function StoreSelector({
               <span className={currentStore?.id === store.id ? 'font-semibold' : ''}>
                 {store.name}
               </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDeleteConfirm(store);
-                }}
-              >
-                <Trash2 className="w-3 h-3 text-destructive" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => startEdit(store, e)}
+                >
+                  <Edit2 className="w-3 h-3 text-muted-foreground" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteConfirm(store);
+                  }}
+                >
+                  <Trash2 className="w-3 h-3 text-destructive" />
+                </Button>
+              </div>
             </DropdownMenuItem>
           ))}
           
@@ -124,6 +152,7 @@ export function StoreSelector({
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {/* Delete Confirm Dialog */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -145,6 +174,36 @@ export function StoreSelector({
               }}
             >
               Obriši
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Rename Dialog */}
+      <AlertDialog open={!!editingStore} onOpenChange={() => setEditingStore(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Preimenuj prodavnicu</AlertDialogTitle>
+            <AlertDialogDescription>
+              Unesite novi naziv za prodavnicu "{editingStore?.name}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Novi naziv..."
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRename();
+                if (e.key === 'Escape') setEditingStore(null);
+              }}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Odustani</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRename}>
+              Spremi
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
