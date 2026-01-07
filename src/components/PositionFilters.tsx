@@ -44,7 +44,7 @@ export function PositionFilters({
       <div className="relative flex-1 min-w-[200px] max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Pretraži po broju ili trgovcu..."
+          placeholder="Pretraži po broju, trgovcu ili nazivu..."
           value={filters.search}
           onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
           className="pl-9 h-9"

@@ -34,7 +34,10 @@ export function filterPositionsForExport(positions: Position[], filters: ExportF
       const query = filters.searchQuery.toLowerCase();
       const matchesNumber = p.positionNumber.toLowerCase().includes(query);
       const matchesTrader = p.trader?.toLowerCase().includes(query);
-      if (!matchesNumber && !matchesTrader) return false;
+      const matchesLabel = p.positionLabel?.toLowerCase().includes(query);
+      const matchesType = p.positionType?.toLowerCase().includes(query);
+      const matchesItem = p.itemName?.toLowerCase().includes(query);
+      if (!matchesNumber && !matchesTrader && !matchesLabel && !matchesType && !matchesItem) return false;
     }
 
     return true;
@@ -52,14 +55,20 @@ export function exportToExcel(
   const data = filteredPositions.map(p => ({
     'Broj pozicije': p.positionNumber,
     'Trgovac': p.trader || '-',
+    'Naziv pozicije': p.positionLabel || '-',
+    'Tip pozicije': p.positionType || '-',
+    'Artikal': p.itemName || '-',
     'Odjel': getDepartmentInfo(p.department).label,
     'Zakup do': p.leaseEndDate 
       ? new Date(p.leaseEndDate).toLocaleDateString('hr-HR')
       : '-',
+    'Vrijednost (KM)': p.leaseValueKm ?? 0,
     'Status': p.isFree ? 'Slobodno' : 'Zauzeto',
     'Napomene': p.notes || '-',
     'X koordinata': Math.round(p.x),
     'Y koordinata': Math.round(p.y),
+    'Širina': Math.round(p.width),
+    'Visina': Math.round(p.height),
   }));
 
   // Create workbook and worksheet
@@ -70,12 +79,18 @@ export function exportToExcel(
   ws['!cols'] = [
     { wch: 15 }, // Broj pozicije
     { wch: 25 }, // Trgovac
+    { wch: 20 }, // Naziv pozicije
+    { wch: 18 }, // Tip pozicije
+    { wch: 20 }, // Artikal
     { wch: 15 }, // Odjel
     { wch: 12 }, // Zakup do
+    { wch: 14 }, // Vrijednost
     { wch: 10 }, // Status
     { wch: 30 }, // Napomene
     { wch: 12 }, // X
     { wch: 12 }, // Y
+    { wch: 10 }, // Širina
+    { wch: 10 }, // Visina
   ];
 
   // Add worksheet to workbook
@@ -88,6 +103,7 @@ export function exportToExcel(
     { 'Metrika': 'Zauzeto', 'Vrijednost': filteredPositions.filter(p => !p.isFree).length },
     { 'Metrika': 'Slobodno', 'Vrijednost': filteredPositions.filter(p => p.isFree).length },
     { 'Metrika': 'Jedinstvenih trgovaca', 'Vrijednost': new Set(filteredPositions.filter(p => p.trader).map(p => p.trader)).size },
+    { 'Metrika': 'Vrijednost zakupa (KM)', 'Vrijednost': filteredPositions.reduce((acc, p) => acc + (p.isFree ? 0 : (p.leaseValueKm ?? 0)), 0) },
     { 'Metrika': 'Datum izvoza', 'Vrijednost': new Date().toLocaleString('hr-HR') },
     { 'Metrika': 'Prodavnica', 'Vrijednost': storeName },
   ];
