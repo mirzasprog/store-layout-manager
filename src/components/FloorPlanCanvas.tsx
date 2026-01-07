@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { Upload, Plus, Move, ZoomIn, ZoomOut } from 'lucide-react';
+import { Plus, Move, ZoomIn, ZoomOut, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Position } from '@/types/position';
 import { PositionBalloon } from './PositionBalloon';
@@ -27,35 +27,10 @@ export function FloorPlanCanvas({
   floorPlanUrl,
 }: FloorPlanCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [localFloorPlan, setLocalFloorPlan] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<Tool>('select');
   const [scale, setScale] = useState(1);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-
-  const floorPlanImage = floorPlanUrl || localFloorPlan;
-
-  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-    if (!validTypes.includes(file.type) && !file.name.endsWith('.dwg')) {
-      toast.error('Podržani formati: JPEG, PNG, WebP, PDF');
-      return;
-    }
-
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setLocalFloorPlan(e.target?.result as string);
-        toast.success('Nacrt uspješno učitan!');
-      };
-      reader.readAsDataURL(file);
-    } else {
-      toast.info('PDF i DWG datoteke će biti pretvorene u sliku. Za sada učitajte JPEG/PNG verziju nacrta.');
-    }
-  }, []);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (activeTool !== 'add') return;
@@ -134,20 +109,6 @@ export function FloorPlanCanvas({
             Dodaj poziciju
           </Button>
           
-          <div className="w-px h-6 bg-border mx-2" />
-          
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              accept="image/*,.pdf,.dwg"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <Button variant="outline" size="sm" className="gap-2 pointer-events-none">
-              <Upload className="w-4 h-4" />
-              Učitaj nacrt
-            </Button>
-          </label>
         </div>
 
         <div className="flex items-center gap-2">
@@ -180,9 +141,9 @@ export function FloorPlanCanvas({
         onMouseUp={handleMouseUp}
         style={{ minHeight: '500px' }}
       >
-        {floorPlanImage && (
+        {floorPlanUrl && (
           <img
-            src={floorPlanImage}
+            src={floorPlanUrl}
             alt="Floor plan"
             className="absolute top-0 left-0 pointer-events-none opacity-60"
             style={{ 
@@ -192,7 +153,7 @@ export function FloorPlanCanvas({
           />
         )}
 
-        {!floorPlanImage && positions.length === 0 && (
+        {!floorPlanUrl && positions.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
             <Upload className="w-16 h-16 mb-4 opacity-50" />
             <p className="text-lg font-medium">Učitajte nacrt prodavnice</p>
