@@ -68,13 +68,13 @@ export function PositionDetails({ position, onUpdate, onClose }: PositionDetails
     : DEPARTMENTS;
 
   const positionTypeOptions = [
-    { value: '', label: 'Nije postavljeno' },
-    { value: 'Bocna polica', label: 'Bocna polica' },
-    { value: 'Gondola', label: 'Gondola' },
-    { value: 'Frižider', label: 'Frižider' },
-    { value: 'Kasa', label: 'Kasa' },
-    { value: 'Promo zona', label: 'Promo zona' },
-    { value: 'Otok', label: 'Otok' },
+    { value: 'nije-postavljeno', label: 'Nije postavljeno' },
+    { value: 'bocna-polica', label: 'Bočna polica' },
+    { value: 'gondola', label: 'Gondola' },
+    { value: 'frizider', label: 'Frižider' },
+    { value: 'kasa', label: 'Kasa' },
+    { value: 'promo-zona', label: 'Promo zona' },
+    { value: 'otok', label: 'Otok' },
   ];
 
   return (
