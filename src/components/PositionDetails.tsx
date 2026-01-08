@@ -1,4 +1,4 @@
-import { X, Save } from 'lucide-react';
+import { X, Save, Copy } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Position, Department, DEPARTMENTS } from '@/types/position';
 import { Button } from '@/components/ui/button';
@@ -19,9 +19,10 @@ interface PositionDetailsProps {
   position: Position;
   onUpdate: (id: string, updates: Partial<Position>) => void;
   onClose: () => void;
+  onCopyToOtherStore?: (position: Position) => void;
 }
 
-export function PositionDetails({ position, onUpdate, onClose }: PositionDetailsProps) {
+export function PositionDetails({ position, onUpdate, onClose, onCopyToOtherStore }: PositionDetailsProps) {
   const [formData, setFormData] = useState({
     positionNumber: position.positionNumber,
     trader: position.trader,
@@ -67,14 +68,24 @@ export function PositionDetails({ position, onUpdate, onClose }: PositionDetails
     ? DEPARTMENTS.filter(d => d.value !== 'slobodna')
     : DEPARTMENTS;
 
+  const positionLabelOptions = [
+    { value: 'gratis', label: 'Gratis' },
+    { value: 'promo', label: 'Promo' },
+    { value: 'standard', label: 'Standard' },
+    { value: 'premium', label: 'Premium' },
+    { value: 'sezonska', label: 'Sezonska' },
+  ];
+
   const positionTypeOptions = [
-    { value: 'nije-postavljeno', label: 'Nije postavljeno' },
-    { value: 'bocna-polica', label: 'Bočna polica' },
+    { value: 'polica', label: 'Polica' },
     { value: 'gondola', label: 'Gondola' },
     { value: 'frizider', label: 'Frižider' },
+    { value: 'rashladna-vitrina', label: 'Rashladna vitrina' },
+    { value: 'vitrina', label: 'Vitrina' },
     { value: 'kasa', label: 'Kasa' },
-    { value: 'promo-zona', label: 'Promo zona' },
+    { value: 'bocna-polica', label: 'Bočna polica' },
     { value: 'otok', label: 'Otok' },
+    { value: 'promo-zona', label: 'Promo zona' },
   ];
 
   return (
@@ -134,32 +145,53 @@ export function PositionDetails({ position, onUpdate, onClose }: PositionDetails
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="positionLabel">Naziv pozicije</Label>
-          <Input
-            id="positionLabel"
-            value={formData.positionLabel}
-            onChange={(e) => setFormData(f => ({ ...f, positionLabel: e.target.value }))}
-            placeholder="npr. Gratis"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="positionType">Tip pozicije</Label>
+          <Label htmlFor="positionLabel">Vrsta ugovora</Label>
           <Select
-            value={formData.positionType}
-            onValueChange={(value) => setFormData(f => ({ ...f, positionType: value }))}
+            value={formData.positionLabel || 'none'}
+            onValueChange={(value) => setFormData(f => ({ ...f, positionLabel: value === 'none' ? '' : value }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Odaberite tip" />
+              <SelectValue placeholder="Odaberite vrstu" />
             </SelectTrigger>
             <SelectContent>
-              {positionTypeOptions.map((option) => (
-                <SelectItem key={option.label} value={option.value}>
+              <SelectItem value="none">Nije postavljeno</SelectItem>
+              {positionLabelOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="positionType">Tip pozicije (oprema)</Label>
+          <Select
+            value={formData.positionType || 'none'}
+            onValueChange={(value) => setFormData(f => ({ ...f, positionType: value === 'none' ? '' : value }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Odaberite tip" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Nije postavljeno</SelectItem>
+              {positionTypeOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="itemName">Naziv artikla</Label>
+          <Input
+            id="itemName"
+            value={formData.itemName}
+            onChange={(e) => setFormData(f => ({ ...f, itemName: e.target.value }))}
+            placeholder="Artikal na poziciji"
+          />
         </div>
 
         <div className="space-y-2">
@@ -219,11 +251,21 @@ export function PositionDetails({ position, onUpdate, onClose }: PositionDetails
         </div>
       </div>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border space-y-2">
         <Button onClick={handleSave} className="w-full gap-2">
           <Save className="w-4 h-4" />
           Spremi promjene
         </Button>
+        {onCopyToOtherStore && (
+          <Button 
+            variant="outline" 
+            onClick={() => onCopyToOtherStore(position)} 
+            className="w-full gap-2"
+          >
+            <Copy className="w-4 h-4" />
+            Kopiraj u drugu prodavnicu
+          </Button>
+        )}
       </div>
     </div>
   );
