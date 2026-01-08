@@ -34,7 +34,7 @@ export function useLeaseTotals(stores: Store[]) {
     try {
       const { data, error } = await supabase
         .from('positions')
-        .select('store_id, is_free');
+        .select('lease_value_km, position_label, store_id, is_free');
 
       if (error) throw error;
 
@@ -50,10 +50,19 @@ export function useLeaseTotals(stores: Store[]) {
 
       (data || []).forEach((row: any) => {
         if (row.is_free) return;
+        const leaseValue = Number(row.lease_value_km ?? 0);
+        total += leaseValue;
 
         const storeEntry = storeAccumulator.get(row.store_id) || { leasedValue: 0, leasedCount: 0 };
+        storeEntry.leasedValue += leaseValue;
         storeEntry.leasedCount += 1;
         storeAccumulator.set(row.store_id, storeEntry);
+
+        const label = row.position_label?.trim() || 'Bez naziva';
+        const labelEntry = labelAccumulator.get(label) || { leasedValue: 0, leasedCount: 0 };
+        labelEntry.leasedValue += leaseValue;
+        labelEntry.leasedCount += 1;
+        labelAccumulator.set(label, labelEntry);
       });
 
       const nextStoreTotals: StoreLeaseTotal[] = stores.map(store => {
@@ -66,8 +75,16 @@ export function useLeaseTotals(stores: Store[]) {
         };
       });
 
+      const nextLabelTotals: PositionLabelTotal[] = Array.from(labelAccumulator.entries())
+        .map(([label, totals]) => ({
+          label,
+          leasedValue: totals.leasedValue,
+          leasedCount: totals.leasedCount,
+        }))
+        .sort((a, b) => b.leasedValue - a.leasedValue);
+
       setStoreTotals(nextStoreTotals);
-      setLabelTotals([]);
+      setLabelTotals(nextLabelTotals);
       setTotalValue(total);
     } catch (error) {
       console.error('Error fetching lease totals:', error);

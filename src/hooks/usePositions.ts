@@ -14,16 +14,16 @@ const mapDbToPosition = (row: any): Position => ({
   positionNumber: row.position_number,
   trader: row.trader,
   leaseEndDate: row.lease_end_date,
-  leaseValueKm: 0,
-  positionLabel: '',
-  positionType: '',
-  itemName: '',
+  leaseValueKm: row.lease_value_km ?? 0,
+  positionLabel: row.position_label ?? '',
+  positionType: row.position_type ?? '',
+  itemName: row.item_name ?? '',
   department: row.department as Department,
   isFree: row.is_free,
   x: row.x,
   y: row.y,
-  width: 60,
-  height: 60,
+  width: row.width ?? 60,
+  height: row.height ?? 60,
   notes: row.notes,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
@@ -152,10 +152,16 @@ export function usePositions(storeId: string | null) {
           store_id: storeId,
           position_number: positionNumber,
           trader: '',
+          lease_value_km: 0,
+          position_label: '',
+          position_type: '',
+          item_name: '',
           department: 'slobodna',
           is_free: true,
           x,
           y,
+          width: 60,
+          height: 60,
         })
         .select()
         .single();
@@ -179,7 +185,6 @@ export function usePositions(storeId: string | null) {
       if (updates.positionNumber !== undefined) dbUpdates.position_number = updates.positionNumber;
       if (updates.trader !== undefined) {
         dbUpdates.trader = updates.trader;
-        // Auto-update isFree based on trader
         const hasTrader = updates.trader && updates.trader.trim() !== '';
         dbUpdates.is_free = !hasTrader;
         if (!hasTrader) {
@@ -189,11 +194,17 @@ export function usePositions(storeId: string | null) {
         }
       }
       if (updates.leaseEndDate !== undefined) dbUpdates.lease_end_date = updates.leaseEndDate;
+      if (updates.leaseValueKm !== undefined) dbUpdates.lease_value_km = updates.leaseValueKm;
+      if (updates.positionLabel !== undefined) dbUpdates.position_label = updates.positionLabel;
+      if (updates.positionType !== undefined) dbUpdates.position_type = updates.positionType;
+      if (updates.itemName !== undefined) dbUpdates.item_name = updates.itemName;
       if (updates.department !== undefined) dbUpdates.department = updates.department;
       if (updates.isFree !== undefined) dbUpdates.is_free = updates.isFree;
       if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
       if (updates.x !== undefined) dbUpdates.x = updates.x;
       if (updates.y !== undefined) dbUpdates.y = updates.y;
+      if (updates.width !== undefined) dbUpdates.width = updates.width;
+      if (updates.height !== undefined) dbUpdates.height = updates.height;
 
       const { data, error } = await supabase
         .from('positions')
@@ -256,14 +267,26 @@ export function usePositions(storeId: string | null) {
   }, [fetchPositions]);
 
   const resizePosition = useCallback(async (id: string, width: number, height: number) => {
-    // Just update local state - no database column for width/height yet
     setPositions(prev => prev.map(p =>
       p.id === id ? { ...p, width, height } : p
     ));
-  }, []);
 
-  const duplicatePosition = useCallback(async (source: Position, x: number, y: number) => {
-    if (!storeId) return null;
+    try {
+      const { error } = await supabase
+        .from('positions')
+        .update({ width, height })
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error resizing position:', error);
+      fetchPositions();
+    }
+  }, [fetchPositions]);
+
+  const duplicatePosition = useCallback(async (source: Position, x: number, y: number, targetStoreId?: string) => {
+    const destStoreId = targetStoreId || storeId;
+    if (!destStoreId) return null;
 
     const positionNumber = `P${String(positions.length + 1).padStart(3, '0')}`;
 
@@ -271,14 +294,20 @@ export function usePositions(storeId: string | null) {
       const { data, error } = await supabase
         .from('positions')
         .insert({
-          store_id: storeId,
+          store_id: destStoreId,
           position_number: positionNumber,
           trader: source.trader,
           lease_end_date: source.leaseEndDate,
+          lease_value_km: source.leaseValueKm ?? 0,
+          position_label: source.positionLabel,
+          position_type: source.positionType,
+          item_name: source.itemName,
           department: source.department,
           is_free: source.isFree,
           x,
           y,
+          width: source.width,
+          height: source.height,
           notes: source.notes || null,
         })
         .select()
@@ -287,8 +316,11 @@ export function usePositions(storeId: string | null) {
       if (error) throw error;
 
       const newPosition = mapDbToPosition(data);
-      setPositions(prev => [...prev, newPosition]);
-      setSelectedPosition(newPosition);
+      if (!targetStoreId || targetStoreId === storeId) {
+        setPositions(prev => [...prev, newPosition]);
+        setSelectedPosition(newPosition);
+      }
+      toast.success('Pozicija kopirana!');
       return newPosition;
     } catch (error) {
       console.error('Error duplicating position:', error);

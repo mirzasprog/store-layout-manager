@@ -8,15 +8,19 @@ import { ReportsDialog } from '@/components/ReportsDialog';
 import { DepartmentLegend } from '@/components/DepartmentLegend';
 import { PositionFilters } from '@/components/PositionFilters';
 import { ExportDialog } from '@/components/ExportDialog';
+import { CopyToStoreDialog } from '@/components/CopyToStoreDialog';
 import { useStores } from '@/hooks/useStores';
 import { usePositions } from '@/hooks/usePositions';
 import { useLeaseTotals } from '@/hooks/useLeaseTotals';
 import { Toaster } from '@/components/ui/sonner';
 import { Loader2 } from 'lucide-react';
+import { Position } from '@/types/position';
 
 const Index = () => {
   const [showReports, setShowReports] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showCopyToStore, setShowCopyToStore] = useState(false);
+  const [positionToCopy, setPositionToCopy] = useState<Position | null>(null);
   
   const {
     stores,
@@ -66,6 +70,15 @@ const Index = () => {
     if (currentStore) {
       await updateStore(currentStore.id, { floor_plan_url: url });
     }
+  };
+
+  const handleCopyToOtherStore = (position: Position) => {
+    setPositionToCopy(position);
+    setShowCopyToStore(true);
+  };
+
+  const handleCopyToStore = async (position: Position, targetStoreId: string) => {
+    await duplicatePosition(position, 100, 100, targetStoreId);
   };
 
   return (
@@ -128,6 +141,7 @@ const Index = () => {
             position={selectedPosition}
             onUpdate={updatePosition}
             onClose={() => setSelectedPosition(null)}
+            onCopyToOtherStore={handleCopyToOtherStore}
           />
         )}
       </div>
@@ -143,6 +157,15 @@ const Index = () => {
         onOpenChange={setShowExport}
         positions={positions}
         storeName={currentStore?.name || 'Prodavnica'}
+      />
+      
+      <CopyToStoreDialog
+        open={showCopyToStore}
+        onOpenChange={setShowCopyToStore}
+        position={positionToCopy}
+        stores={stores}
+        currentStoreId={currentStore?.id || null}
+        onCopyToStore={handleCopyToStore}
       />
       
       <Toaster position="bottom-right" />

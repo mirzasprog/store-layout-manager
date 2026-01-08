@@ -18,42 +18,60 @@ export type Database = {
         Row: {
           created_at: string
           department: Database["public"]["Enums"]["department_type"]
+          height: number | null
           id: string
           is_free: boolean
+          item_name: string | null
           lease_end_date: string | null
+          lease_value_km: number | null
           notes: string | null
+          position_label: string | null
           position_number: string
+          position_type: string | null
           store_id: string
           trader: string
           updated_at: string
+          width: number | null
           x: number
           y: number
         }
         Insert: {
           created_at?: string
           department?: Database["public"]["Enums"]["department_type"]
+          height?: number | null
           id?: string
           is_free?: boolean
+          item_name?: string | null
           lease_end_date?: string | null
+          lease_value_km?: number | null
           notes?: string | null
+          position_label?: string | null
           position_number: string
+          position_type?: string | null
           store_id: string
           trader?: string
           updated_at?: string
+          width?: number | null
           x?: number
           y?: number
         }
         Update: {
           created_at?: string
           department?: Database["public"]["Enums"]["department_type"]
+          height?: number | null
           id?: string
           is_free?: boolean
+          item_name?: string | null
           lease_end_date?: string | null
+          lease_value_km?: number | null
           notes?: string | null
+          position_label?: string | null
           position_number?: string
+          position_type?: string | null
           store_id?: string
           trader?: string
           updated_at?: string
+          width?: number | null
           x?: number
           y?: number
         }
